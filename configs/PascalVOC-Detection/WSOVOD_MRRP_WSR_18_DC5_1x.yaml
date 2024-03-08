@@ -1,0 +1,37 @@
+_BASE_: "Base-RCNN-DilatedC5.yaml"
+MODEL:
+  WEIGHTS: "models/DRN-WSOD/resnet18_ws_model_120_d2.pkl"
+  BACKBONE:
+    NAME: "build_mrrp_wsl_resnet_backbone"
+    FREEZE_AT: 5
+  MRRP:
+    MRRP_ON: True
+    NUM_BRANCH: 3
+    BRANCH_DILATIONS: [1, 2, 4]
+    TEST_BRANCH_IDX: -1
+    MRRP_STAGE: "res5"
+  RESNETS:
+    DEPTH: 18
+    RES5_DILATION: 2
+    RES2_OUT_CHANNELS: 64
+    OUT_FEATURES: ["res5"]
+  ANCHOR_GENERATOR:
+    SIZES: [[32, 64], [128, 256], [512, 768]]
+    ASPECT_RATIOS: [[1.0, 2.0, 0.5]]
+  ROI_HEADS:
+    IN_FEATURES: ["res5"]
+  ROI_BOX_HEAD:
+    POOLER_TYPE: "ROILoopPool"
+    NUM_CONV: 0
+    NUM_FC: 2
+    DAN_DIM: [4096, 4096]
+    BBOX_REG_LOSS_TYPE: "smooth_l1_weighted"
+SOLVER:
+  STEPS: (70000,)
+  MAX_ITER: 100000
+  WARMUP_ITERS: 200
+  IMS_PER_BATCH: 4
+  BASE_LR: 0.01
+  WEIGHT_DECAY: 0.0005
+  BIAS_LR_FACTOR: 2.0
+  WEIGHT_DECAY_BIAS: 0.0

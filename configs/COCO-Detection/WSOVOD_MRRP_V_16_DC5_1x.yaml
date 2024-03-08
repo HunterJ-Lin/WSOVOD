@@ -1,0 +1,30 @@
+_BASE_: "Base-RCNN-DilatedC5.yaml"
+MODEL:
+  WEIGHTS: "models/VGG/VGG_ILSVRC_16_layers_v1_d2.pkl"
+  PIXEL_MEAN: [103.939, 116.779, 123.68]
+  BACKBONE:
+    NAME: "build_mrrp_vgg_backbone"
+    FREEZE_AT: 5
+  MRRP:
+    MRRP_ON: True
+    NUM_BRANCH: 3
+    BRANCH_DILATIONS: [1, 2, 4]
+    TEST_BRANCH_IDX: -1
+    MRRP_STAGE: "plain5"
+  VGG:
+    DEPTH: 16
+    CONV5_DILATION: 2
+  ANCHOR_GENERATOR:
+    SIZES: [[32, 64], [128, 256], [512, 768]]
+    ASPECT_RATIOS: [[1.0, 2.0, 0.5]]
+  ROI_HEADS:
+    IN_FEATURES: ["plain5"]
+SOLVER:
+  STEPS: (140000,)
+  MAX_ITER: 200000
+  WARMUP_ITERS: 200
+  IMS_PER_BATCH: 4
+  BASE_LR: 0.001
+  WEIGHT_DECAY: 0.0005
+  BIAS_LR_FACTOR: 2.0
+  WEIGHT_DECAY_BIAS: 0.0

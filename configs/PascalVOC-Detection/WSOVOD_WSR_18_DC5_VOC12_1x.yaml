@@ -1,0 +1,6 @@
+_BASE_: "WSOVOD_WSR_18_DC5_1x.yaml"
+DATASETS:
+  TRAIN: ('voc_2012_train', 'voc_2012_val')
+  PROPOSAL_FILES_TRAIN: ('datasets/proposals/sam_voc_2012_train_d2.pkl', 'datasets/proposals/sam_voc_2012_val_d2.pkl')
+  TEST: ('voc_2007_test',)
+  PROPOSAL_FILES_TEST: ('datasets/proposals/sam_voc_2007_test_d2.pkl', )

@@ -1,0 +1,10 @@
+git+https://github.com/openai/CLIP.git
+git+https://github.com/facebookresearch/segment-anything.git
+git+https://github.com/facebookresearch/detectron2.git
+opencv-python
+scikit-image
+shapely
+graphviz
+timm
+opencv-contrib-python
+Pillow==9.5.0
