@@ -37,18 +37,50 @@ pip install -e .
 ```
 
 ## ✏️ Usage <a name="5"></a> 
+1、Please follow [this](datasets/README.md) to prepare datasets for training.
+
+2、Download SAM checkpoints.
+```
+mkdir tools/sam_checkpoints & cd tools/sam_checkpoints
+wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth
+wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth
+```
+
+3、Prepare SAM proposals for WSOVOD, take voc_2007_train for example.
+```
+bash scripts/generate_sam_proposals_cuda.sh 4 --checkpoint tools/sam_checkpoints/sam_vit_h_4b8939.pth --model-type vit_h --points-per-side 32 --pred-iou-thresh 0.86 --stability-score-thresh 0.92 --crop-n-layers 1 --crop-n-points-downscale-factor 2 --min-mask-region-area 20.0 --dataset-name voc_2007_train --output datasets/proposals/sam_voc_2007_train_d2.pkl
+```
+
+4、Prepare class text embeddings for WSOVOD, take COCO for example.
+```
+python tools/generate_class_text_embedding_cuda.py --dataset-name coco_2017_val --mode-type ViT-L/14/32 --prompt-type single --output models/coco_text_embedding_single_prompt.pkl
+```
+
+5、Download backbone pretrained from [here](https://onedrive.live.com/?authkey=%21ADxETVJEa8rsdbY&id=1D9EE73D0A5A686D%21153&cid=1D9EE73D0A5A686D).
+
+6、Train a single dataset and test on another dataset, take COCO and VOC for example.
+```
+bash scripts/train_script.sh tools/train_net.py configs/COCO-Detection/WSOVOD_WSR_18_DC5_1x.yaml 4 20240301
+
+python tools/train_net.py --config-file configs/PascalVOC-Detection/WSOVOD_WSR_18_DC5_1x.yaml --num-gpus 4 --eval-only MODEL.WEIGHTS output/configs/COCO-Detection/WSOVOD_WSR_50_DC5_1x_20240301/model_final.pth
+```
+7、Train mix datasets, take COCO and VOC for example.
+```
+
+```
 
 ## 🔍 Citation <a name="6"></a> 
 If you find WSOVOD useful in your research, please consider citing:
 
-<!-- ```
+```
 @InProceedings{WSOVOD_2024_AAAI,
 	author = {Lin, Jianghang and Shen, Yunhang and Wang, Bingquan and Lin, Shaohui and Li, Ke and Cao, Liujuan},
 	title = {Weakly Supervised Open-Vocabulary Object Detection},
 	booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
 	year = {2024},
 }   
-``` -->
+```
 
 
 

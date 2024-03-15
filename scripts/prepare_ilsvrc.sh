@@ -2,6 +2,14 @@
 
 set -e
 set -x
+temp="output/temp"
+if [ ! -d "$temp" ]; then
+    # 如果目录不存在，使用mkdir -p递归创建目录
+    mkdir -p "$temp"
+    echo "Directory $temp created."
+else
+    echo "Directory $temp already exists."
+fi
 
 img_root="$1"
 info_json="$2"

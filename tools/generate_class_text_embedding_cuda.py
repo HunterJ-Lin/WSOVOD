@@ -78,12 +78,9 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=str, default='models/voc_text_embedding_single_prompt_cuda.pkl')
     args = parser.parse_args()
 
-    world_size = get_world_size()
-    rank = get_local_rank()
     # load clip model
-    clip_model, clip_preprocess = clip.load(args.model_type, f'cuda:{rank}', jit=False)
+    clip_model, clip_preprocess = clip.load(args.model_type, 'cuda', jit=False)
     clip_model = clip_model.eval()
-    d = []
 
     thing_classes = MetadataCatalog.get(args.dataset_name).thing_classes
     if thing_classes is None:
@@ -103,52 +100,26 @@ if __name__ == '__main__':
             descriptions.append(f"a photo of a {cls_name}.")
 
     with torch.no_grad():
-        if world_size > 1:
-            bs = len(descriptions)
-            local_bs = bs // get_world_size()
-            if bs % get_world_size() != 0:
-                local_bs += 1
-            local_descriptions = descriptions[rank * local_bs: (rank + 1) * local_bs]
-            tot = len(local_descriptions)
-            lbs = tot // args.bs
-            nb = tot // lbs
-            if tot % lbs != 0:
-                nb += 1
-            local_text_embeddings_list = []
-            for i in range(nb):
-                l_local_descriptions = local_descriptions[i * lbs: (i + 1) * lbs]
-                text_inputs = torch.cat([clip.tokenize(ds) for ds in l_local_descriptions]).to(f'cuda:{rank}')
-                local_text_embeddings = clip_model.encode_text(text_inputs).to(device='cpu').float()
-                local_text_embeddings_list.append(local_text_embeddings)
-            text_embeddings_list = [None for _ in range(world_size)]
-            dist.all_gather_object(text_embeddings_list, local_text_embeddings_list)
-            text_embeddings = torch.cat(text_embeddings_list)
-        else:
-            tot = len(descriptions)
-            bs = args.bs
-            nb = tot // bs
-            if tot % bs != 0:
-                nb += 1
-            text_embeddings_list = []
-            for i in range(nb):
-                local_descriptions = descriptions[i * bs: (i + 1) * bs]
-                text_inputs = torch.cat([clip.tokenize(ds) for ds in local_descriptions]).to(f'cuda:{rank}')
-                local_text_embeddings = clip_model.encode_text(text_inputs).to(device='cpu').float()
-                text_embeddings_list.append(local_text_embeddings)
-            text_embeddings = torch.cat(text_embeddings_list)
+        tot = len(descriptions)
+        bs = args.bs
+        nb = tot // bs
+        if tot % bs != 0:
+            nb += 1
+        text_embeddings_list = []
+        for i in range(nb):
+            local_descriptions = descriptions[i * bs: (i + 1) * bs]
+            text_inputs = torch.cat([clip.tokenize(ds) for ds in local_descriptions]).to('cuda')
+            local_text_embeddings = clip_model.encode_text(text_inputs).to(device='cpu').float()
+            text_embeddings_list.append(local_text_embeddings)
+        text_embeddings = torch.cat(text_embeddings_list)
 
-    if is_main_process():
-        dim = text_embeddings.shape[-1]
-        candidate_tot = sum(candidates)
-        text_embeddings = text_embeddings.split(candidates, dim=0)
-        if args.prompt_type == 'mutiple':
-            text_embeddings = [text_embedding.mean(0).unsqueeze(0) for text_embedding in text_embeddings]
-        
-        text_embeddings = torch.cat(text_embeddings)
-        print('save to '+args.output)
-        with open(args.output, "wb") as f:
-            pickle.dump(text_embeddings, f, pickle.HIGHEST_PROTOCOL)
-    else:
-        pass
-    if world_size > 1:
-        dist.barrier()
+    dim = text_embeddings.shape[-1]
+    candidate_tot = sum(candidates)
+    text_embeddings = text_embeddings.split(candidates, dim=0)
+    if args.prompt_type == 'mutiple':
+        text_embeddings = [text_embedding.mean(0).unsqueeze(0) for text_embedding in text_embeddings]
+    
+    text_embeddings = torch.cat(text_embeddings)
+    print('save to '+args.output)
+    with open(args.output, "wb") as f:
+        pickle.dump(text_embeddings, f, pickle.HIGHEST_PROTOCOL)
