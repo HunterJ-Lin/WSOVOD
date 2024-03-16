@@ -31,5 +31,9 @@ dist/
 .idea
 
 # project dirs
-/datasets
+/datasets/coco
+/datasets/lvis
+/datasets/ILSVRC2012
+/datasets/proposals
+/datasets/VOC*
 /models

@@ -15,7 +15,6 @@ from tqdm import tqdm
 
 
 def get_filename_key(x):
-
     basename = os.path.basename(x)
     if basename[:-4].isdigit():
         return int(basename[:-4])

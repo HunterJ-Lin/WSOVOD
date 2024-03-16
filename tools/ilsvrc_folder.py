@@ -212,8 +212,8 @@ def parse_args():
     parser.add_argument("--ann-root", help="ann root", type=str, default='')
     parser.add_argument("--out-file", help="output path", required=True)
     parser.add_argument("--info-json", help="output path", required=True)
-    parser.add_argument('--has-instance', nargs='?', const=True, type=_strtobool, default=False, help="has instance")
-    parser.add_argument('--has-segmentation', nargs='?', const=True, type=_strtobool, default=False, help="has segmentation")
+    parser.add_argument('--has-instance', nargs='?', const=True, type=_strtobool, default=True, help="has instance")
+    parser.add_argument('--has-segmentation', nargs='?', const=True, type=_strtobool, default=True, help="has segmentation")
     args = parser.parse_args()
     return args
 
