@@ -96,6 +96,6 @@ if __name__ == '__main__':
         text_embeddings = clip_model.encode_text(text_inputs).float()
 
     print(text_embeddings.shape)
-    # print('save to '+args.output)
-    # with open(args.output, "wb") as f:
-    #     pickle.dump(text_embeddings, f, pickle.HIGHEST_PROTOCOL)
+    print('save to '+args.output)
+    with open(args.output, "wb") as f:
+        pickle.dump(text_embeddings, f, pickle.HIGHEST_PROTOCOL)
