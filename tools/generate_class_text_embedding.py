@@ -71,7 +71,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset-name', type=str, default='coco_2017_val')
     parser.add_argument('--categories', type=str, default='')
     # parser.add_argument('--mode-type', type=str, default='ViT-L/14/32')
-    parser.add_argument('--mode-type', type=str, default='ViT-B/32')
+    parser.add_argument('--model-type', type=str, default='ViT-B/32')
     parser.add_argument('--prompt-type', type=str, default='single')
     parser.add_argument('--output', type=str, default='models/coco_text_embedding_single_prompt.pkl')
     args = parser.parse_args()
@@ -95,6 +95,7 @@ if __name__ == '__main__':
         text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}.") for c in thing_classes]).to('cpu')
         text_embeddings = clip_model.encode_text(text_inputs).float()
 
-    print('save to '+args.output)
-    with open(args.output, "wb") as f:
-        pickle.dump(text_embeddings, f, pickle.HIGHEST_PROTOCOL)
+    print(text_embeddings.shape)
+    # print('save to '+args.output)
+    # with open(args.output, "wb") as f:
+    #     pickle.dump(text_embeddings, f, pickle.HIGHEST_PROTOCOL)
