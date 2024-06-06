@@ -22,11 +22,11 @@ from wsovod.modeling.proposal_generator import WSOVODRPN_V2
 
 from ..postprocessing import detector_postprocess
 
-__all__ = ["GeneralizedRCNN_WSOVOD", ]
+__all__ = ["GeneralizedRCNN_WSOVOD_MixedDatasets", ]
 
 
 @META_ARCH_REGISTRY.register()
-class GeneralizedRCNN_WSOVOD(nn.Module):
+class GeneralizedRCNN_WSOVOD_MixedDatasets(nn.Module):
     """
     Generalized R-CNN. Any models that contains the following three components:
     1. Per-image feature extraction (aka backbone)
@@ -47,6 +47,8 @@ class GeneralizedRCNN_WSOVOD(nn.Module):
         pixel_std: Tuple[float],
         input_format: Optional[str] = None,
         vis_period: int = 0,
+        classifier_train = [],
+        classifier_test = None,
     ):
         """
         Args:
@@ -76,17 +78,31 @@ class GeneralizedRCNN_WSOVOD(nn.Module):
             self.pixel_mean.shape == self.pixel_std.shape
         ), f"{self.pixel_mean} and {self.pixel_std} have different shapes!"
 
-        self.logger = logging.getLogger(__name__)
-        self.classifier = None
+        self.classifier_test = classifier_test
+        self.classifier_train = classifier_train
 
     @classmethod
     def from_config(cls, cfg):
         backbone = build_backbone(cfg)
-        
+        classifier_train = []
+        weight_paths = cfg.DATASETS.MIXED_DATASETS.WEIGHT_PATH_TRAINS
+        for weight_path in weight_paths:
+            weight = (
+                torch.tensor(np.load(weight_path,encoding='bytes', allow_pickle=True), dtype=torch.float32).contiguous()
+            )  # C x D
+            classifier_train.append(weight.to(cfg.MODEL.DEVICE))
+
+        weight_path = cfg.MODEL.ROI_BOX_HEAD.OPEN_VOCABULARY.WEIGHT_PATH_TEST
+        weight = (
+            torch.tensor(np.load(weight_path,encoding='bytes', allow_pickle=True), dtype=torch.float32).contiguous()
+        )  # C x D
+        classifier_test = weight.to(cfg.MODEL.DEVICE)
         return {
             "cfg": cfg,
             "backbone": backbone,
             "data_aware_head": DataAwareFeaturesHead(cfg, backbone.output_shape()) if cfg.MODEL.ROI_BOX_HEAD.OPEN_VOCABULARY.DATA_AWARE else None,
+            "classifier_train": classifier_train,
+            "classifier_test": classifier_test,
             "proposal_generator": build_proposal_generator(cfg, backbone.output_shape()),
             "roi_heads": build_roi_heads(cfg, backbone.output_shape()),
             "input_format": cfg.INPUT.FORMAT,
@@ -169,6 +185,10 @@ class GeneralizedRCNN_WSOVOD(nn.Module):
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
         else:
             gt_instances = None
+   
+        source_id = 0
+        if "dataset_id" in batched_inputs[0]:
+            source_id = batched_inputs[0]["dataset_id"]
 
         features = self.backbone(images.tensor)
 
@@ -214,11 +234,13 @@ class GeneralizedRCNN_WSOVOD(nn.Module):
             proposals, 
             data_aware_features, 
             gt_instances, 
+            self.classifier_train[source_id],
+            source_id = source_id,
             append_background = True,
             file_names=file_names,
             loaded_proposals = loaded_proposals
         )
-
+ 
         if self.proposal_generator is not None:
             proposal_losses = self.proposal_generator.get_losses(self.roi_heads.proposal_targets)
         else:
@@ -294,18 +316,19 @@ class GeneralizedRCNN_WSOVOD(nn.Module):
                 data_aware_features = None
 
             if classifier is not None:
-                self.classifier = classifier
-            elif self.classifier == None:
+                self.classifier_test = classifier
+            elif self.classifier_test == None:
                 weight_path = self.cfg.MODEL.ROI_BOX_HEAD.OPEN_VOCABULARY.WEIGHT_PATH_TEST
                 self.logger.info("Loading " + weight_path)
                 weight = (
                     torch.tensor(np.load(weight_path,encoding='bytes', allow_pickle=True), dtype=torch.float32).contiguous()
                 )  # C x D
                 self.logger.info(f"Loaded class weight {weight.size()}")
-                self.classifier = weight
-                self.classifier = self.classifier.to(self.cfg.MODEL.DEVICE)
 
-            results, _, all_scores, all_boxes = self.roi_heads(images, features, proposals, data_aware_features, None, self.classifier, append_background = True)
+                self.classifier_test = weight
+                self.classifier_test = self.classifier_test.to(self.cfg.MODEL.DEVICE)
+
+            results, _, all_scores, all_boxes = self.roi_heads(images, features, proposals, data_aware_features, None, self.classifier_test, append_background = True)
         else:
             detected_instances = [x.to(self.device) for x in detected_instances]
             results, all_scores, all_boxes = self.roi_heads.forward_with_given_boxes(
@@ -314,7 +337,7 @@ class GeneralizedRCNN_WSOVOD(nn.Module):
 
         if do_postprocess:
             assert not torch.jit.is_scripting(), "Scripting is not supported for postprocess."
-            return GeneralizedRCNN_WSOVOD._postprocess(results, batched_inputs, images.image_sizes)
+            return GeneralizedRCNN_WSOVOD_MixedDatasets._postprocess(results, batched_inputs, images.image_sizes)
         else:
             return results, all_scores, all_boxes
 

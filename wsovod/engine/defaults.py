@@ -39,7 +39,6 @@ from fvcore.nn.precise_bn import get_bn_modules
 from omegaconf import OmegaConf
 from torch.nn.parallel import DistributedDataParallel
 
-# from wsovod.data import build_detection_test_loader, build_custom_train_loader
 from wsovod.data import build_detection_test_loader, build_detection_train_loader
 from wsovod.engine.hooks import ParametersNormInspectHook
 from wsovod.solver import build_lr_scheduler, build_optimizer

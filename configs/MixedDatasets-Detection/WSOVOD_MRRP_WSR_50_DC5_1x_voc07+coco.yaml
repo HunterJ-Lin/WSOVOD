@@ -1,0 +1,60 @@
+_BASE_: "Base-RCNN-DilatedC5.yaml"
+MODEL:
+  WEIGHTS: "models/DRN-WSOD/resnet50_ws_model_120_d2.pkl"
+  BACKBONE:
+    NAME: "build_mrrp_wsl_resnet_backbone"
+    FREEZE_AT: 5
+  MRRP:
+    MRRP_ON: True
+    NUM_BRANCH: 3
+    BRANCH_DILATIONS: [1, 2, 4]
+    TEST_BRANCH_IDX: -1
+    MRRP_STAGE: "res5"
+  RESNETS:
+    DEPTH: 50
+    RES5_DILATION: 2
+    OUT_FEATURES: ["res5"]
+  ANCHOR_GENERATOR:
+    SIZES: [[32, 64], [128, 256], [512, 768]]
+    ASPECT_RATIOS: [[1.0, 2.0, 0.5]]
+  ROI_HEADS:
+    IN_FEATURES: ["res5"]
+  ROI_BOX_HEAD: 
+    OPEN_VOCABULARY:
+      DATA_AWARE: True
+      WEIGHT_PATH_TEST: "models/coco_text_embedding_single_prompt.pkl"
+    POOLER_TYPE: "ROILoopPool"
+    NUM_CONV: 0
+    NUM_FC: 2
+    DAN_DIM: [4096, 4096]
+    BBOX_REG_LOSS_TYPE: "smooth_l1_weighted"
+SOLVER:
+  STEPS: (140000,)
+  MAX_ITER: 200000
+  WARMUP_ITERS: 200
+  IMS_PER_BATCH: 4
+  BASE_LR: 0.01
+  WEIGHT_DECAY: 0.0005
+  BIAS_LR_FACTOR: 2.0
+  WEIGHT_DECAY_BIAS: 0.0
+WSOVOD:
+  BBOX_REFINE:
+    ENABLE: True
+  INSTANCE_REFINEMENT:
+    REFINE_NUM: 1
+    REFINE_REG: [True]
+DATASETS:
+  PRECOMPUTED_PROPOSAL_TOPK_TRAIN: 4000
+  MIXED_DATASETS:
+    WEIGHT_PATH_TRAINS: ["models/voc_text_embedding_single_prompt.pkl","models/voc_text_embedding_single_prompt.pkl","models/coco_text_embedding_single_prompt.pkl"]
+    NAMES: ('voc_2007_train', 'voc_2007_val', 'coco_2017_train')
+    PROPOSAL_FILES: ('datasets/proposals/sam_voc_2007_train_d2.pkl', 'datasets/proposals/sam_voc_2007_val_d2.pkl','datasets/proposals/sam_coco_2017_train_d2.pkl')
+    NUM_CLASSES: [20,20,80]
+    FILTER_EMPTY_ANNOTATIONS: [True, True, True]
+    RATIOS: [1,1,20]
+    USE_CAS: [False,False,False]
+    USE_RFS: [False,False,False]
+    CAS_LAMBDA: 1.0
+  TEST: ('coco_2017_val',)
+  PROPOSAL_FILES_TEST: ('datasets/proposals/sam_coco_2017_val_d2.pkl', )
+  PRECOMPUTED_PROPOSAL_TOPK_TEST: 4000

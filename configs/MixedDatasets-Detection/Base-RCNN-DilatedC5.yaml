@@ -1,0 +1,100 @@
+MODEL:
+  META_ARCHITECTURE: "GeneralizedRCNN_WSOVOD_MixedDatasets"
+  PIXEL_MEAN: [102.9801, 115.9465, 122.7717]
+  LOAD_PROPOSALS: True
+  PROPOSAL_GENERATOR:
+    NAME: "WSOVODRPN_V2"
+    MIN_SIZE: 40
+  RPN:
+    IN_FEATURES: ["res5"]
+    PRE_NMS_TOPK_TRAIN: 2048
+    PRE_NMS_TOPK_TEST: 2048
+    POST_NMS_TOPK_TRAIN: 1024
+    POST_NMS_TOPK_TEST: 1024
+    NMS_THRESH: 0.7
+    BATCH_SIZE_PER_IMAGE: 512
+    # BATCH_SIZE_PER_IMAGE: 256 # default rpn
+    POSITIVE_FRACTION: 0.5
+    BBOX_REG_LOSS_TYPE: "smooth_l1"
+    IOU_THRESHOLDS: [0.2, 0.6]
+    # IOU_THRESHOLDS: [0.3, 0.7] # default rpn
+  ROI_HEADS:
+    NAME: "WSOVODMixedDatasetsROIHeads"
+    NUM_CLASSES: 80
+    SCORE_THRESH_TEST: 0.00001
+    NMS_THRESH_TEST: 0.3
+    BATCH_SIZE_PER_IMAGE: 4096
+    POSITIVE_FRACTION: 1.0
+    PROPOSAL_APPEND_GT: False
+  ROI_BOX_HEAD:
+    NAME: "DiscriminativeAdaptationNeck"
+    POOLER_TYPE: "ROIPool"
+    NUM_CONV: 0
+    NUM_FC: 2
+    DAN_DIM: [4096, 4096]
+    POOLER_RESOLUTION: 7
+    BBOX_REG_LOSS_TYPE: "smooth_l1_weighted"
+    OPEN_VOCABULARY:
+      WEIGHT_PATH_TRAIN: "models/coco_text_embedding_single_prompt.pkl"
+      WEIGHT_PATH_TEST: "models/coco_text_embedding_single_prompt.pkl"
+      WEIGHT_DIM: 512
+      USE_BIAS: 0.0
+      NORM_WEIGHT: True
+      NORM_TEMP: 50.0
+      DATA_AWARE: True
+WSOVOD:
+  ITER_SIZE: 1
+  BBOX_REFINE:
+    ENABLE: True
+  OBJECT_MINING:
+    MEAN_LOSS: True
+  INSTANCE_REFINEMENT:
+    REFINE_NUM: 1
+    REFINE_REG: [True]
+  SAMPLING:
+    SAMPLING_ON: True
+    IOU_THRESHOLDS: [[0.5],]
+    IOU_LABELS: [[0, 1],]
+    BATCH_SIZE_PER_IMAGE: [4096,]
+    POSITIVE_FRACTION: [1.0,]
+SOLVER:
+  IMS_PER_BATCH: 4
+  IMS_PER_BATCH_LIST: [4,4,4]
+  BASE_LR: 0.01
+  STEPS: (140000,)
+  MAX_ITER: 200000
+  REFERENCE_WORLD_SIZE: 4
+INPUT:
+  MIN_SIZE_TRAIN: (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992, 1024, 1056, 1088, 1120, 1152, 1184, 1216)
+  MAX_SIZE_TRAIN: 2000
+  MIN_SIZE_TEST: 688
+  MAX_SIZE_TEST: 4000
+  CROP:
+    ENABLED: True
+TEST:
+  AUG:
+    ENABLED: True
+    MIN_SIZES: (480, 576, 672, 768, 864, 960, 1056, 1152)
+    MAX_SIZE: 4000
+    FLIP: True
+  EVAL_PERIOD: 5000
+  EVAL_TRAIN: False
+DATASETS:
+  PRECOMPUTED_PROPOSAL_TOPK_TRAIN: 4000
+  MIXED_DATASETS:
+    WEIGHT_PATH_TRAINS: ["models/voc_text_embedding_single_prompt.pkl","models/voc_text_embedding_single_prompt.pkl","models/coco_text_embedding_single_prompt.pkl"]
+    NAMES: ('voc_2007_train', 'voc_2007_val', 'coco_2017_train')
+    PROPOSAL_FILES: ('datasets/proposals/sam_voc_2007_train_d2.pkl', 'datasets/proposals/sam_voc_2007_val_d2.pkl','datasets/proposals/sam_coco_2017_train_d2.pkl')
+    NUM_CLASSES: [20,20,80]
+    FILTER_EMPTY_ANNOTATIONS: [True, True, True]
+    RATIOS: [1,1,20]
+    USE_CAS: [False,False,False]
+    USE_RFS: [False,False,False]
+    CAS_LAMBDA: 1.0
+  TEST: ('coco_2017_val',)
+  PROPOSAL_FILES_TEST: ('datasets/proposals/sam_coco_2017_val_d2.pkl', )
+  PRECOMPUTED_PROPOSAL_TOPK_TEST: 4000
+DATALOADER:
+  SAMPLER_TRAIN: "MultiDatasetTrainingSampler"
+VIS_PERIOD: 10000
+VERSION: 2

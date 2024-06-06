@@ -79,6 +79,11 @@ def main(args):
 
 if __name__ == "__main__":
     args = default_argument_parser().parse_args()
+    args.config_file = 'configs/MixedDatasets-Detection/WSOVOD_MRRP_WSR_18_DC5_1x.yaml'
+    # args.num_gpus = 1
+    # # # args.eval_only = True
+    # args.opts = ['OUTPUT_DIR','output/temp','SOLVER.IMS_PER_BATCH',1,'SOLVER.REFERENCE_WORLD_SIZE',1,]
+    #              'MODEL.WEIGHTS','output/configs/COCO-Detection/WSOVOD_WSR_18_DC5_1x_20230621_003554/model_final.pth']
     print("Command Line Args:", args)
     launch(
         main,

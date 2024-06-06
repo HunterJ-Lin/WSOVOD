@@ -14,7 +14,7 @@ from . import detection_utils as utils
 This file contains the default mapping that's applied to "dataset dicts".
 """
 
-__all__ = ["DatasetMapper","MixDatasetMapper"]
+__all__ = ["DatasetMapper"]
 
 
 class DatasetMapper:
