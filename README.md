@@ -57,7 +57,7 @@ bash scripts/generate_sam_proposals_cuda.sh 4 --checkpoint tools/sam_checkpoints
 python tools/generate_class_text_embedding_cuda.py --dataset-name coco_2017_val --mode-type ViT-L/14/32 --prompt-type single --output models/coco_text_embedding_single_prompt.pkl
 ```
 
-5、Download backbone pretrained from [here](https://onedrive.live.com/?authkey=%21ADxETVJEa8rsdbY&id=1D9EE73D0A5A686D%21153&cid=1D9EE73D0A5A686D).
+5、Download backbone pretrained from [here](https://1drv.ms/f/s!Am1oWgo9554dgRQ8RE1SRGvK7HW2).
 
 6、Train a single dataset and test on another dataset, take COCO and VOC for example.
 ```
